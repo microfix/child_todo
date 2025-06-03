@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Børne Todo Liste 📋</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Fredoka', cursive;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+        
+        /* CSS Custom Properties for temaer */
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-color: #4CAF50;
+        }
+        
+        /* Farvetema Vælger */
+        .theme-selector {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        
+        .theme-selector h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .theme-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .theme-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-family: 'Fredoka', cursive;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .theme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-family: 'Fredoka', cursive;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .day-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .day-btn {
+            padding: 10px 15px;
+            border: 2px solid #e1e1e1;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Fredoka', cursive;
+            font-weight: 500;
+        }
+        
+        .day-btn:hover {
+            border-color: var(--primary-color);
+            background: #f8f9ff;
+        }
+        
+        .day-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .standard-tasks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }        
+        .task-card {
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .task-card:hover {
+            border-color: #4CAF50;
+            background: #f8fff8;
+            transform: translateY(-2px);
+        }
+        
+        .task-card.selected {
+            border-color: #4CAF50;
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .custom-task-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+        
+        .emoji-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .icon-input {
+            width: 60px;
+            text-align: center;
+            font-family: 'Material Icons';
+            padding-right: 30px !important;
+        }
+        
+        .emoji-btn {
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 2;
+        }
+        
+        .emoji-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .add-btn {
+            padding: 12px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Fredoka', cursive;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        .add-btn:hover {
+            background: #45a049;
+        }        
+        .todo-list {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .todo-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .todo-title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .todo-day {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .todo-items {
+            list-style: none;
+        }
+        
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: move;
+            transition: all 0.3s;
+        }
+        
+        .todo-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }        
+        .todo-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+            min-width: 30px;
+        }
+        
+        .todo-text {
+            flex: 1;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .download-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--bg-gradient);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .theme-buttons {
+                gap: 8px;
+            }
+            
+            .theme-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .day-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .day-btn {
+                padding: 12px 8px;
+                font-size: 0.9rem;
+            }
+            
+            .custom-task-form {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .emoji-input-container {
+                width: 100%;
+            }
+            
+            .icon-input {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .day-buttons {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .day-btn {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+                padding: 15px;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Børne Todo Liste Maker</h1>
+    
+    <!-- Farvetema Vælger -->
+    <div class="theme-selector">
+        <h3>🎨 Vælg Farvetema:</h3>
+        <div class="theme-buttons">
+            <button class="theme-btn" data-theme="blue" style="background: linear-gradient(45deg, #667eea, #764ba2);">💙 Blå</button>
+            <button class="theme-btn" data-theme="red" style="background: linear-gradient(45deg, #ff6b6b, #ee5a52);">❤️ Rød</button>
+            <button class="theme-btn" data-theme="green" style="background: linear-gradient(45deg, #4ecdc4, #44a08d);">💚 Grøn</button>
+            <button class="theme-btn" data-theme="purple" style="background: linear-gradient(45deg, #a55eea, #8e44ad);">💜 Lilla</button>
+            <button class="theme-btn" data-theme="pink" style="background: linear-gradient(45deg, #ff9ff3, #f368e0);">💗 Pink</button>
+            <button class="theme-btn" data-theme="orange" style="background: linear-gradient(45deg, #ffa726, #ff7043);">🧡 Orange</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Editor Panel -->
+        <div class="panel">
+            <!-- Navn og Dag -->
+            <div class="section">
+                <h2>👶 Barn & Dag</h2>
+                <div class="input-group">
+                    <label for="childName">Barnets navn:</label>
+                    <input type="text" id="childName" placeholder="fx Zoe" oninput="updatePreview()">
+                </div>
+                
+                <div class="input-group">
+                    <label>Vælg dag:</label>
+                    <div class="day-buttons">
+                        <button class="day-btn" onclick="selectDay('Mandag')">Mandag</button>
+                        <button class="day-btn" onclick="selectDay('Tirsdag')">Tirsdag</button>
+                        <button class="day-btn" onclick="selectDay('Onsdag')">Onsdag</button>
+                        <button class="day-btn" onclick="selectDay('Torsdag')">Torsdag</button>
+                        <button class="day-btn" onclick="selectDay('Fredag')">Fredag</button>
+                        <button class="day-btn" onclick="selectDay('Lørdag')">Lørdag</button>
+                        <button class="day-btn" onclick="selectDay('Søndag')">Søndag</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Standard opgaver -->
+            <div class="section">
+                <h2>🎯 Standard Opgaver</h2>
+                <div class="standard-tasks" id="standardTasks">
+                    <!-- Genereres via JavaScript -->
+                </div>
+            </div>            
+            <!-- Brugerdefinerede opgaver -->
+            <div class="section">
+                <h2>✨ Lav Din Egen Opgave</h2>
+                <div class="custom-task-form">
+                    <div class="emoji-input-container">
+                        <input type="text" id="customIcon" class="icon-input" 
+                               placeholder="🏠" 
+                               title="Klik for emoji tastatur"
+                               inputmode="emoji"
+                               onclick="openEmojiKeyboard()"
+                               onfocus="openEmojiKeyboard()">
+                        <button type="button" class="emoji-btn" onclick="openEmojiKeyboard()" title="Åbn emoji tastatur">
+                            😀
+                        </button>
+                    </div>
+                    <input type="text" id="customText" placeholder="fx 'Ryd værelset'" style="flex: 1;">
+                    <button class="add-btn" onclick="addCustomTask()">Tilføj</button>
+                </div>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+                    💡 Klik i emoji feltet eller på 😀 knappen for at åbne emoji tastatur!
+                </p>
+            </div>
+        </div>
+        
+        <!-- Preview Panel -->
+        <div class="panel">
+            <div class="section">
+                <h2>👀 Preview & Download</h2>
+                <div class="todo-list" id="todoPreview">
+                    <div class="todo-header">
+                        <div class="todo-title" id="previewName">Børnets Navn</div>
+                        <div class="todo-day" id="previewDay">Vælg en dag</div>
+                    </div>
+                    <ul class="todo-items" id="todoItems">
+                        <li style="text-align: center; color: #999; padding: 40px;">
+                            Tilføj opgaver for at se preview 📝
+                        </li>
+                    </ul>
+                </div>
+                <button class="download-btn" onclick="downloadPDF()">📄 Download som PDF</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Global variabler
+        let selectedDay = '';
+        let todoItems = [];
+        let sortable;
+        let currentTheme = 'blue';
+        
+        // Farvetemaer definition
+        const themes = {
+            blue: {
+                primary: '#667eea',
+                secondary: '#764ba2',
+                bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                accent: '#4CAF50'
+            },
+            red: {
+                primary: '#ff6b6b',
+                secondary: '#ee5a52',
+                bg: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+                accent: '#ff4757'
+            },
+            green: {
+                primary: '#4ecdc4',
+                secondary: '#44a08d',
+                bg: 'linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)',
+                accent: '#2ed573'
+            },
+            purple: {
+                primary: '#a55eea',
+                secondary: '#8e44ad',
+                bg: 'linear-gradient(135deg, #a55eea 0%, #8e44ad 100%)',
+                accent: '#7e57c2'
+            },
+            pink: {
+                primary: '#ff9ff3',
+                secondary: '#f368e0',
+                bg: 'linear-gradient(135deg, #ff9ff3 0%, #f368e0 100%)',
+                accent: '#ff6b9d'
+            },
+            orange: {
+                primary: '#ffa726',
+                secondary: '#ff7043',
+                bg: 'linear-gradient(135deg, #ffa726 0%, #ff7043 100%)',
+                accent: '#ff5722'
+            }
+        };
+        
+        // Standard opgaver med emojis
+        const standardTasks = [
+            { icon: '👕', text: 'Tag tøj på' },
+            { icon: '🦷', text: 'Børst tænder' },
+            { icon: '🧼', text: 'Vask hænder' },
+            { icon: '🍽️', text: 'Spis morgenmad' },
+            { icon: '🎒', text: 'Pak skoletaske' },
+            { icon: '👟', text: 'Tag sko på' },
+            { icon: '🏠', text: 'Ryd værelset' },
+            { icon: '📚', text: 'Lav lektier' },
+            { icon: '🚿', text: 'Tag bad' },
+            { icon: '🛏️', text: 'Gå i seng' },
+            { icon: '🧸', text: 'Leg med legetøj' },
+            { icon: '📺', text: 'Se TV' }
+        ];
+        
+        // Initialiser app
+        function initApp() {
+            renderStandardTasks();
+            initDragAndDrop();
+            initThemeSelector();
+        }
+        
+        // Initialiser farvetema vælger
+        function initThemeSelector() {
+            const themeButtons = document.querySelectorAll('.theme-btn');
+            
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const theme = btn.dataset.theme;
+                    setTheme(theme);
+                    
+                    // Opdater active state
+                    themeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            // Sæt standard tema (blå)
+            document.querySelector('[data-theme="blue"]').classList.add('active');
+        }
+        
+        // Skift farvetema
+        function setTheme(themeName) {
+            currentTheme = themeName;
+            const theme = themes[themeName];
+            
+            if (!theme) return;
+            
+            // Opdater CSS custom properties
+            const root = document.documentElement;
+            root.style.setProperty('--primary-color', theme.primary);
+            root.style.setProperty('--secondary-color', theme.secondary);
+            root.style.setProperty('--bg-gradient', theme.bg);
+            root.style.setProperty('--accent-color', theme.accent);
+            
+            console.log(`🎨 Skiftet til ${themeName} tema!`);
+        }
+        
+        // Åbn emoji tastatur (native)
+        function openEmojiKeyboard() {
+            const input = document.getElementById('customIcon');
+            
+            // Focus på input feltet
+            input.focus();
+            
+            // Detect platform og åbn emoji tastatur
+            const platform = detectPlatform();
+            
+            try {
+                if (platform === 'mac') {
+                    // På macOS: Cmd + Ctrl + Space
+                    showEmojiHint('⌘ + Ctrl + Space for emoji tastatur på Mac! 🍎');
+                } else if (platform === 'windows') {
+                    // På Windows: Win + . eller Win + ;
+                    showEmojiHint('Win + . eller Win + ; for emoji tastatur på Windows! 🪟');
+                } else if (platform === 'mobile') {
+                    // På mobile: inputmode="emoji" skulle åbne emoji tastatur automatisk
+                    console.log('📱 Mobile emoji tastatur skulle åbne automatisk');
+                } else {
+                    showEmojiHint('💡 Brug din enheds emoji tastatur: Ctrl+; eller tilsvarende genvej');
+                }
+            } catch (error) {
+                console.log('Kunne ikke åbne emoji tastatur automatisk:', error);
+            }
+        }
+        
+        // Detect platform
+        function detectPlatform() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            
+            if (/iphone|ipad|ipod|android/i.test(userAgent)) {
+                return 'mobile';
+            } else if (/mac/i.test(userAgent)) {
+                return 'mac';
+            } else if (/win/i.test(userAgent)) {
+                return 'windows';
+            } else {
+                return 'other';
+            }
+        }
+        
+        // Vis emoji hint til brugeren
+        function showEmojiHint(message) {
+            // Vis kort popup med instruktion
+            const existingToast = document.querySelector('.emoji-toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = 'emoji-toast';
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--primary-color);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                font-family: 'Fredoka', cursive;
+                font-size: 14px;
+                z-index: 1000;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            // Tilføj CSS animation hvis den ikke eksisterer
+            if (!document.querySelector('#toastStyles')) {
+                const style = document.createElement('style');
+                style.id = 'toastStyles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            
+            // Fjern toast efter 4 sekunder
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 4000);
+        }
+        
+        // Vis standard opgaver
+        function renderStandardTasks() {
+            const container = document.getElementById('standardTasks');
+            container.innerHTML = '';
+            
+            standardTasks.forEach((task, index) => {
+                const taskCard = document.createElement('div');
+                taskCard.className = 'task-card';
+                taskCard.onclick = () => addStandardTask(index);
+                taskCard.innerHTML = `
+                    <span style="font-size: 20px;">${task.icon}</span>
+                    <span>${task.text}</span>
+                `;
+                container.appendChild(taskCard);
+            });
+        }        
+        // Vælg dag
+        function selectDay(day) {
+            selectedDay = day;
+            
+            // Opdater UI
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Opdater preview
+            updatePreview();
+        }
+        
+        // Tilføj standard opgave
+        function addStandardTask(index) {
+            const task = standardTasks[index];
+            const newTask = {
+                id: Date.now(),
+                icon: task.icon,
+                text: task.text
+            };
+            
+            todoItems.push(newTask);
+            updateTodoList();
+            
+            // Visual feedback
+            const cards = document.querySelectorAll('.task-card');
+            cards[index].classList.add('selected');
+            setTimeout(() => {
+                cards[index].classList.remove('selected');
+            }, 300);
+        }
+        
+        // Tilføj brugerdefineret opgave
+        function addCustomTask() {
+            const iconInput = document.getElementById('customIcon');
+            const textInput = document.getElementById('customText');
+            
+            const icon = iconInput.value.trim() || '📝';
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                alert('Skriv en opgave tekst! 📝');
+                return;
+            }            
+            const newTask = {
+                id: Date.now(),
+                icon: icon,
+                text: text
+            };
+            
+            todoItems.push(newTask);
+            updateTodoList();
+            
+            // Ryd inputs
+            iconInput.value = '';
+            textInput.value = '';
+        }
+        
+        // Opdater todo liste
+        function updateTodoList() {
+            const container = document.getElementById('todoItems');
+            
+            if (todoItems.length === 0) {
+                container.innerHTML = '<li style="text-align: center; color: #999; padding: 40px;">Tilføj opgaver for at se preview 📝</li>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            todoItems.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.className = 'todo-item';
+                li.setAttribute('data-id', task.id);
+                li.innerHTML = `
+                    <div class="checkbox"></div>
+                    <span class="todo-icon">${task.icon}</span>
+                    <span class="todo-text">${task.text}</span>
+                    <button onclick="removeTask(${task.id})" style="background: #ff4757; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">❌</button>
+                `;
+                container.appendChild(li);
+            });
+            
+            // Genindstil drag and drop
+            if (sortable) {
+                sortable.destroy();
+            }
+            initDragAndDrop();
+        }        
+        // Initialiser drag and drop
+        function initDragAndDrop() {
+            const container = document.getElementById('todoItems');
+            
+            if (container.children.length > 0 && container.children[0].className === 'todo-item') {
+                sortable = Sortable.create(container, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function(evt) {
+                        // Opdater todoItems array baseret på ny rækkefølge
+                        const newOrder = [];
+                        Array.from(container.children).forEach(li => {
+                            const id = parseInt(li.getAttribute('data-id'));
+                            const task = todoItems.find(t => t.id === id);
+                            if (task) newOrder.push(task);
+                        });
+                        todoItems = newOrder;
+                    }
+                });
+            }
+        }
+        
+        // Fjern opgave
+        function removeTask(id) {
+            todoItems = todoItems.filter(task => task.id !== id);
+            updateTodoList();
+        }
+        
+        // Opdater preview
+        function updatePreview() {
+            const nameInput = document.getElementById('childName');
+            const previewName = document.getElementById('previewName');
+            const previewDay = document.getElementById('previewDay');
+            
+            previewName.textContent = nameInput.value || 'Børnets Navn';
+            previewDay.textContent = selectedDay || 'Vælg en dag';
+        }        
+        // Download som PDF
+        async function downloadPDF() {
+            const childName = document.getElementById('childName').value || 'Barn';
+            
+            if (!selectedDay) {
+                alert('Vælg en dag først! 📅');
+                return;
+            }
+            
+            if (todoItems.length === 0) {
+                alert('Tilføj mindst én opgave! 📝');
+                return;
+            }
+            
+            // Skjul download knap midlertidigt
+            const downloadBtn = document.querySelector('.download-btn');
+            downloadBtn.style.display = 'none';
+            
+            try {
+                const element = document.getElementById('todoPreview');
+                
+                // Generer canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                // Opret PDF
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                // Download
+                const fileName = `${childName}_${selectedDay}_Todo.pdf`;
+                pdf.save(fileName);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Der skete en fejl ved PDF generering 😔');
+            } finally {
+                // Vis download knap igen
+                downloadBtn.style.display = 'block';
+            }
+        }
+        
+        // Start appen når siden indlæses
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+    </script>
+</body>
+</html>
